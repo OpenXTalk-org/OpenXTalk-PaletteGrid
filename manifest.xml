@@ -22,17 +22,27 @@
   <requires name="com.livecode.engine"/>
   <requires name="com.livecode.mathfoundation"/>
   <metadata key="userVisible">true</metadata>
-  <metadata key="_ide">true</metadata>
   <metadata key="preferredSize">240,480</metadata>
-  <property name="hiliteColor" get="string" set="string"/>
-  <metadata key="hiliteColor.editor">com.livecode.pi.colorwithalpha</metadata>
-  <metadata key="hiliteColor.section">Colors</metadata>
-  <metadata key="hiliteColor.label">Hilite fill</metadata>
-  <metadata key="hiliteColor.default">127,127,127,127</metadata>
-  <handler name="setHiliteColor" parameters="in string" return="nothing"/>
-  <handler name="getHiliteColor" parameters="" return="string"/>
   <property name="preferredSize" get="list"/>
   <metadata key="preferredSize.user_visible">true</metadata>
+  <property name="fillRule" get="string" set="string"/>
+  <metadata key="fillRule.editor">com.livecode.pi.enum</metadata>
+  <metadata key="fillRule.options">non-zero,even odd</metadata>
+  <metadata key="fillRule.default">non-zero</metadata>
+  <metadata key="fillRule.label">Fill rule</metadata>
+  <handler name="setFillRule" parameters="in string" return="nothing"/>
+  <property name="foregroundColor" get="any"/>
+  <metadata key="foregroundColor.editor">com.livecode.pi.colorwithalpha</metadata>
+  <metadata key="foregroundColor.default">127,127,127,127</metadata>
+  <metadata key="foregroundColor.section">Colors</metadata>
+  <metadata key="foregroundColor.label">Foreground Color</metadata>
+  <property name="hiliteColor" get="string" set="string"/>
+  <metadata key="hiliteColor.editor">com.livecode.pi.colorwithalpha</metadata>
+  <metadata key="hiliteColor.default"></metadata>
+  <metadata key="hiliteColor.section">Colors</metadata>
+  <metadata key="hiliteColor.label">Hilite color</metadata>
+  <handler name="setHiliteColor" parameters="in string" return="nothing"/>
+  <handler name="getHiliteColor" parameters="" return="string"/>
   <property name="selectedIcon" get="optional string" set="string"/>
   <property name="showFrameBorder" get="boolean" set="boolean"/>
   <property name="showNames" get="boolean" set="boolean"/>

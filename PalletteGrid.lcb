@@ -30,7 +30,7 @@ metadata author is "OpenXTalk"
 metadata version is "1.0.1"
 metadata title is "PalletteGrid"
 metadata userVisible is "true"
-metadata _ide is "true"
+-- metadata _ide is "true"
 metadata preferredSize is "240,480"
 
 private variable mDataCount as Integer
@@ -62,37 +62,6 @@ private variable mIconSize as Number
 private variable mFilterString as String
 private variable mShowSelectedElement as Boolean
 
-
-
-/*
-Name: hiliteColor
-Type: property
-
-Syntax: set the hiliteColor of <widget> to <color>
-Syntax: get the hiliteColor of <widget>
-
-Summary: The fill color when piano keys are hilited
-
-Description:
-The <hiliteColor> property controls the color used to draw the
-widget's piano key fill color while hilighted.
-*/
-
-private variable mHiliteColor as Color
-property hiliteColor		get getHiliteColor set setHiliteColor
-metadata hiliteColor.editor  is "com.livecode.pi.colorwithalpha" -- "com.livecode.pi.color"
-metadata hiliteColor.section is "Colors"
-metadata hiliteColor.label   is "Hilite fill"
-metadata hiliteColor.default is "127,127,127,127"
-
-public handler setHiliteColor(in pColor as String) returns nothing
-   put stringToColor(pColor) into mHiliteColor
-   redraw all
-end handler
-public handler getHiliteColor() returns String
-   return colorToString(mHiliteColor, true)
-end handler
-
 /**
 The preferred size of the widget.
 
@@ -109,6 +78,96 @@ using the 'popup widget' syntax
 */
 property preferredSize		get getPreferredSize
 metadata preferredSize.user_visible is "true"
+
+
+/**
+Syntax:
+set the fillRule of <widget> to <pRule>
+get the fillRule of <widget>
+
+Parameters:
+pRule(enum): The fill rule to be used.
+- "non-zero": Fill regions encircled at least once by the path.
+- "even odd": Fill regions encircled an even number of times by the path.
+
+Summary: The fill rule to be used when rendering the SVG path.
+
+Description:
+Use the <fillRule> property to set the fill rule to be used for the widget.
+You may need to adjust it to ensure that paths that cross themselves, and paths
+that are made up of overlapping subpaths, are filled correctly.
+
+The areas enclosed by the path are each filled or not filled depending on the
+fill rule used and the number of times the path loops around them.  When the
+path goes around a region clockwise, it adds 1 to number of encirclements.
+When it goes around a region anticlockwise, it subtracs 1 from the number of
+encirclements.
+
+See https://www.w3.org/TR/SVG/painting.html#FillRuleProperty for examples of
+the "non-zero" and "even odd" fill rules.
+*/
+
+private variable mFillRule as String
+property fillRule       get mFillRule      set setFillRule
+metadata fillRule.editor is "com.livecode.pi.enum"
+metadata fillRule.options is "non-zero,even odd"
+metadata fillRule.default is "non-zero"
+metadata fillRule.label is "Fill rule"
+
+public handler setFillRule(in pRule as String) returns nothing
+	put pRule into mFillRule
+	redraw all
+end handler
+
+/**
+Syntax:
+set the foreColor of <widget> to <pColor>
+get the foreColor of <widget>
+
+Summary: Determines the color of the icon when not highlighted.
+
+Description:
+Use the <foreColor> property to set the color of the SVG path, when the icon
+isn't highlighted.
+*/
+private variable mForegroundColor
+property foregroundColor get mForegroundColor
+metadata foregroundColor.editor is "com.livecode.pi.colorwithalpha"
+metadata foregroundColor.default is "127,127,127,127"
+metadata foregroundColor.section is "Colors"
+metadata foregroundColor.label is "Foreground Color"
+
+/**
+Syntax:
+set the hiliteColor of <widget> to <pColor>
+get the hiliteColor of <widget>
+
+Summary: Determines the color of the icon when highlighted.
+
+Description:
+Use the <hiliteColor> property to set the color of the SVG path, when the icon
+is highlighted.
+*/
+property hiliteColor  get getHiliteColor set setHiliteColor
+-- metadata hiliteColor.editor is "com.livecode.pi.color"
+metadata hiliteColor.editor  is "com.livecode.pi.colorwithalpha"
+metadata hiliteColor.default is ""
+-- metadata hiliteColor.default is "180,127,160"
+metadata hiliteColor.section is "Colors"
+metadata hiliteColor.label is "Hilite color"
+private variable mHiliteColor as Color
+-- property hiliteColor 	get getHiliteColor set setHiliteColor
+-- "com.livecode.pi.color"
+-- metadata hiliteColor.label   is "Hilite fill"
+
+public handler setHiliteColor(in pColor as String) returns nothing
+   put stringToColor(pColor) into mHiliteColor
+   redraw all
+end handler
+public handler getHiliteColor() returns String
+   return colorToString(mHiliteColor, true)
+end handler
+
 
 /**
 The selected icon name
@@ -172,15 +231,18 @@ get the showSelectedElement of <widget>
 */
 property showSelectedElement get mShowSelectedElement set setShowSelectedElement
 
-variable tColor as Color
+-- variable tColor as Color
 constant kIconColor is [127,127,127]
 
-constant kDefaultIconSize is 64
+constant kDefaultIconSize is 32
 constant kIconPaddingRatio is 0.25
-constant kMinCols is 1
-constant kMinRows is 1
+constant kMinCols is 2
+constant kMinRows is 2
 
 public handler OnCreate()
+
+	put "non-zero" into mFillRule
+
 	put "" into mFilterString
 	SetDataList()
 	put the empty array into mPaths
@@ -194,9 +256,10 @@ public handler OnCreate()
 
 	put true into mShowSelectedElement
 	put false into mShowNames
-	put kDefaultIconSize into mIconSize
-
-   setHiliteColor("150,127,127,127")
+	put 32 into mIconSize
+   put 2 into mPreferredCols
+   put 2 into mPreferredRows
+   --  setHiliteColor(colorToString(tColor,false)) -- pIncludeAlpha
     updateParameters()
 	initialiseScrollbar()
 end handler
@@ -214,7 +277,6 @@ public handler OnLoad(in pProperties as Array)
     put pProperties["showNames"] into mShowNames
     put pProperties["iconSize"] into mIconSize
     put pProperties["showFrameBorder"] into mFrameBorder
-
 	 --put pProperties["borderWidth"] into mBorderWidth
 	 --put stringToColor(pProperties["borderColor"]) into mStrokeColor
 	 put stringToColor(pProperties["hiliteColor"]) into mHiliteColor
@@ -248,19 +310,23 @@ handler SetDataList()
 end handler
 
 public handler OnPaint()
+       set the stroke width of this canvas to 0.00001
+       set the fill rule of this canvas to mFillRule
+       set the paint of this canvas to my foreground paint
+
     if mRecalculateGeometry then
         updateGeometry()
     end if
-
 	if mRecalculate then
 		updateParameters()
 	end if
 
-	// Draw the background
-	if currently popped up then
-		set the paint of this canvas to getPaint("background","popup")
-		fill rectangle path of my bounds on this canvas
-	end if
+	-- Draw the background
+	-- if currently popped up then
+      -- set the paint of this canvas to solid paint with stringToColor("255,255,255")-- with my foreground paint
+		--) set the paint of this canvas to getPaint("background","popup")
+	--	fill rectangle path of my bounds on this canvas
+	-- end if
 
 	// Draw the icons
 	variable tIcon as Integer
@@ -269,27 +335,27 @@ public handler OnPaint()
 			if tIcon + mFirstDataItem - 1 > mDataCount then
 				exit repeat
 			end if
+         set the paint of this canvas to my background paint
 			drawIcon(tIcon)
 		end repeat
 	end if
 
-	paintScrollbar(this canvas, getPaint("scrollbar", "fill"))
+   paintScrollbar(this canvas, getPaint("scrollbar", "fill"))
 
    if mShowSelectedElement is true then
+      set the paint of this canvas to my foreground paint
 	   drawTitleBar()
    end if
-	drawFrame()
 
-end handler
+   variable tPath as Path
+   // Draw the frame
+   if mFrameBorder is true then
+      set the paint of this canvas to my foreground paint
+      put rectangle path of rectangle [0.5,0.5,my width-0.5,my height-0.5] into tPath
+      -- set the paint of this canvas to getPaint("frame","stroke")
+      stroke tPath on this canvas
+   end if
 
-private handler drawFrame()
-	variable tPath as Path
-	// Draw the frame
-	if mFrameBorder is true then
-		put rectangle path of rectangle [0.5,0.5,my width-0.5,my height-0.5] into tPath
-		set the paint of this canvas to getPaint("frame","stroke")
-		stroke tPath on this canvas
-	end if
 end handler
 
 private handler drawTitleBar()
@@ -299,12 +365,12 @@ private handler drawTitleBar()
 	put topRowHeight() into tTopRowHeight
 	// Draw the title line
 	put line path from point [0.5,tTopRowHeight] to point [my width-0.5, tTopRowHeight] into tPath
-	set the paint of this canvas to getPaint("frame","stroke")
+	-- set the paint of this canvas to getPaint("frame","stroke")
 	stroke tPath on this canvas
 
 	// Draw the selected text and icon
 	variable tTextRect as Rectangle
-	-- set the paint of this canvas to solid paint with mHiliteColor
+	-- set the paint of this canvas to solid paint with stringToColor("255,255,255")
 
     variable tFont as Font
     put my font into tFont
@@ -328,21 +394,55 @@ private handler drawTitleBar()
 			put mPaths[mSelectedElement] into tPath
 		end if
 		constrainPathToRect(tIconRect, tPath)
-		set the paint of this canvas to solid paint with color kIconColor
+		-- set the paint of this canvas to solid paint with stringToColor("127,127,127") -- tHilightColor--  kIconColor
 		fill tPath on this canvas
 	end if
 end handler
 
 constant kMaxIconNameChars is 12
-constant kNameHeight is 20
+constant kNameHeight is 14
 private handler drawIcon(in pIcon as Integer)
 	variable tIconName as String
-	put element pIcon + mFirstDataItem - 1 of mDataList into tIconName
+   -- set the paint of this canvas to my background paint
 
+   --variable tForeGroundPaint
+   -- variable tForeGroundColor as Color
+   --variable tBackroundPaint
+   -- variable tBackroundColor as Color
+   -- variable tHilitedPaint
+   -- variable tHilightColor as Color
+
+   -- put my foreground paint into tForeGroundPaint
+   -- put the color of tForeGroundPaint into tForeGroundColor
+
+   -- put my background paint into tBackroundPaint
+   -- put the color of tBackroundPaint into tBackroundColor
+
+   -- put my highlight paint into tHilitedPaint
+   -- put the color of tHilitedPaint into tHilightColor
+
+	put element pIcon + mFirstDataItem - 1 of mDataList into tIconName
+   set the paint of this canvas to my foreground paint
+   -- set the paint of this canvas to solid paint with stringToColor("127,127,127,127")
 	if mSelectedElement is not nothing and tIconName is mSelectedElement then
-		set the paint of this canvas to solid paint with mHiliteColor
+      set the paint of this canvas to solid paint with stringToColor("127,127,127,127")
+      -- set the paint of this canvas to solid paint with tForeGroundColor
+      -- set the paint of this canvas to solid paint with tForeGroundPaint
+		-- set the paint of this canvas to solid paint with mHiliteColor
 		-- set the paint of this canvas to getPaint("icon", "selected")
+      -- set the paint of this canvas to my background paint
+
 		fill rectangle path of indexToSectorRect(pIcon) on this canvas
+
+      -- set the paint of this canvas to solid paint with stringToColor("255,255,255,127")
+       set the paint of this canvas to my foreground paint
+
+      -- set the paint of this canvas to nothing
+      set the stroke width of this canvas to 2
+      stroke rectangle path of indexToSectorRect(pIcon) on this canvas
+
+      -- set the paint of this canvas to solid paint with stringToColor("127,127,127,127")
+      -- set the paint of this canvas to my highlight paint
 	end if
 
 	variable tPath as Path
@@ -353,8 +453,9 @@ private handler drawIcon(in pIcon as Integer)
 	end if
 
 	constrainPathToRect(mIconRects[pIcon], tPath)
-
-	set the paint of this canvas to solid paint with color kIconColor
+   --  set the paint of this canvas to my foreground paint
+   -- set the paint of this canvas to solid paint with stringToColor("255,255,255,127")
+	-- set the paint of this canvas to solid paint with color tForeGroundColor -- kIconColor
 	fill tPath on this canvas
 
 	if mShowNames then
@@ -644,7 +745,7 @@ end handler
 private handler getPaint(pLocation, pType) returns Paint
 	if pLocation is "background" then
 		if pType is "popup" then
-			return solid paint with stringToColor("255,255,255,128")
+			return solid paint with stringToColor("255,255,255,127")
 		end if
 	else if pLocation is "icon" then
 		if pType is "selected" then
@@ -653,7 +754,7 @@ private handler getPaint(pLocation, pType) returns Paint
 		end if
 	else if pLocation is "scrollbar" then
 		if pType is "fill" then
-			return solid paint with stringToColor("0,0,0,127")
+			return solid paint with stringToColor("127,127,127,127")
 		end if
 	else if pLocation is "frame" then
 		if pType is "stroke" then
@@ -677,16 +778,16 @@ end handler
 --
 --------------------------------------------------------------------------------
 
-constant kPreferredCols is 240
-constant kPreferredRows is 480
+private variable mPreferredCols
+private variable mPreferredRows
 
 public handler getPreferredSize() returns List
 	variable tWidth
-	put mIconSize * kPreferredCols * (1 + kIconPaddingRatio) into tWidth
+	put mIconSize * mPreferredCols * (1 + kIconPaddingRatio) into tWidth
 	add 2 * kScrollbarWidth to tWidth
 
 	variable tHeight
-	put mIconSize * kPreferredRows * (1 + kIconPaddingRatio) into tHeight
+	put mIconSize * mPreferredRows * (1 + kIconPaddingRatio) into tHeight
 	add topRowHeight() to tHeight
 	-- log [tWidth, tHeight]
 
@@ -766,22 +867,23 @@ private variable mDragScrollbarOffset as Real
 
 constant kScrollbarWidth is 5
 
-// Will be the scrollbar's OnCreate handler
+-- Will be the scrollbar's OnCreate handler
 public handler initialiseScrollbar()
 	put 0 into mScrollbarHeight
 	put false into mDragging
 end handler
 
-// Will be the scrollbar's OnPaint handler
+-- Will be the scrollbar's OnPaint handler
 public handler paintScrollbar(in pCanvas as Canvas, in pPaint as Paint)
-	// Draw scrollbar if there is any need
+	-- Draw scrollbar if there is any need
 	if mScrollbarHeight > 0 then
-		set the paint of pCanvas to pPaint
+
+		-- set the paint of pCanvas to pPaint
 		fill mScrollbarPath on pCanvas
 	end if
 end handler
 
-// Will be the scrollbar's OnMouseDown handler
+-- Will be the scrollbar's OnMouseDown handler
 public handler checkScrollbarMouseDown()
 	if mScrollbarHeight > 0 then
 		put the mouse position into mDragStartLoc

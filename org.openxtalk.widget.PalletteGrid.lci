@@ -15,7 +15,8 @@ import module org.openxtalk.widget.pallettegrid
   use com.livecode.math
   use com.livecode.engine
   use com.livecode.mathfoundation
-  handler setHiliteColor(in pColor as String) returns nothing
+  handler setFillRule(in pRule as String) returns nothing
+  handler setHiliteColor(in pRule as String) returns nothing
   handler getHiliteColor() returns String
   handler OnCreate() returns optional any
   handler OnSave(out rProperties as Array) returns optional any
