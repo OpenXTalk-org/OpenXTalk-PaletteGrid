@@ -1,6 +1,6 @@
 import module org.openxtalk.widget.pallettegrid
-  use com.livecode.canvas
   use com.livecode.library.widgetutils
+  use com.livecode.canvas
   use com.livecode.library.iconsvg
   use com.livecode.widget
   use com.livecode.array
@@ -16,8 +16,11 @@ import module org.openxtalk.widget.pallettegrid
   use com.livecode.engine
   use com.livecode.mathfoundation
   handler setFillRule(in pRule as String) returns nothing
+  handler setForeColor(in pRule as String) returns nothing
+  handler getForeColor() returns String
   handler setHiliteColor(in pRule as String) returns nothing
   handler getHiliteColor() returns String
+  handler setCustomIconSet(in pIconSet as optional any) returns nothing
   handler OnCreate() returns optional any
   handler OnSave(out rProperties as Array) returns optional any
   handler OnLoad(in pProperties as Array) returns optional any

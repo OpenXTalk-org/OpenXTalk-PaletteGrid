@@ -9,18 +9,6 @@ author: OpenXTalk
 version: 1.0.1
 
 
-Name: showSelectedElement
-
-Type: property
-
-Syntax: set the showSelectedElement of <widget> to {true | false}
-get the showSelectedElement of <widget>
-
-
-Summary: Controls whether a title bar is drawn displaying the currently selected icon
-
-
-
 Name: iconSize
 
 Type: property
@@ -58,24 +46,6 @@ get the filterString of <widget>
 
 
 Summary: Filters the list of icons to display according to a string
-
-
-
-Name: preferredSize
-
-Type: property
-
-Syntax: get the preferredSize of <widget>
-
-Summary: The preferred size of the widget.
-
-Value:
-A two-item list with the width and height needed to display the widget
-with the current display preferences.
-
-Description:
-The <preferredSize> property is used when the icon widget is popped up
-using the 'popup widget' syntax
 
 
 
@@ -150,6 +120,18 @@ Summary: Determines the color of the icon when not highlighted.
 Description:
 Use the <foreColor> property to set the color of the SVG path, when the icon
 isn't highlighted.
+
+
+
+Name: showSelectedElement
+
+Type: property
+
+Syntax: set the showSelectedElement of <widget> to {true | false}
+get the showSelectedElement of <widget>
+
+
+Summary: Controls whether a title bar is drawn displaying the currently selected icon
 
 
 

@@ -5,8 +5,8 @@
   <version>1.0.1</version>
   <license>community</license>
   <type>widget</type>
-  <requires name="com.livecode.canvas"/>
   <requires name="com.livecode.library.widgetutils"/>
+  <requires name="com.livecode.canvas"/>
   <requires name="com.livecode.library.iconsvg"/>
   <requires name="com.livecode.widget"/>
   <requires name="com.livecode.array"/>
@@ -22,27 +22,29 @@
   <requires name="com.livecode.engine"/>
   <requires name="com.livecode.mathfoundation"/>
   <metadata key="userVisible">true</metadata>
-  <metadata key="preferredSize">240,480</metadata>
-  <property name="preferredSize" get="list"/>
-  <metadata key="preferredSize.user_visible">true</metadata>
+  <metadata key="preferredSize">200,600</metadata>
   <property name="fillRule" get="string" set="string"/>
   <metadata key="fillRule.editor">com.livecode.pi.enum</metadata>
   <metadata key="fillRule.options">non-zero,even odd</metadata>
   <metadata key="fillRule.default">non-zero</metadata>
   <metadata key="fillRule.label">Fill rule</metadata>
   <handler name="setFillRule" parameters="in string" return="nothing"/>
-  <property name="foregroundColor" get="any"/>
+  <property name="foregroundColor" get="string" set="string"/>
   <metadata key="foregroundColor.editor">com.livecode.pi.colorwithalpha</metadata>
   <metadata key="foregroundColor.default">127,127,127,127</metadata>
   <metadata key="foregroundColor.section">Colors</metadata>
-  <metadata key="foregroundColor.label">Foreground Color</metadata>
+  <handler name="setForeColor" parameters="in string" return="nothing"/>
+  <handler name="getForeColor" parameters="" return="string"/>
   <property name="hiliteColor" get="string" set="string"/>
-  <metadata key="hiliteColor.editor">com.livecode.pi.colorwithalpha</metadata>
-  <metadata key="hiliteColor.default"></metadata>
+  <metadata key="hiliteColor.default">180,127,160</metadata>
   <metadata key="hiliteColor.section">Colors</metadata>
   <metadata key="hiliteColor.label">Hilite color</metadata>
   <handler name="setHiliteColor" parameters="in string" return="nothing"/>
   <handler name="getHiliteColor" parameters="" return="string"/>
+  <property name="customIconSet" get="string" set="optional any"/>
+  <metadata key="customIconSet.editor">com.livecode.pi.array</metadata>
+  <metadata key="customIconSet.label">Custom Icon Set Array</metadata>
+  <handler name="setCustomIconSet" parameters="in optional any" return="nothing"/>
   <property name="selectedIcon" get="optional string" set="string"/>
   <property name="showFrameBorder" get="boolean" set="boolean"/>
   <property name="showNames" get="boolean" set="boolean"/>

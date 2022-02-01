@@ -31,7 +31,7 @@ metadata version is "1.0.1"
 metadata title is "PalletteGrid"
 metadata userVisible is "true"
 -- metadata _ide is "true"
-metadata preferredSize is "240,480"
+metadata preferredSize is "200,600"
 
 private variable mDataCount as Integer
 private variable mDataList as List
@@ -76,8 +76,8 @@ Description:
 The <preferredSize> property is used when the icon widget is popped up
 using the 'popup widget' syntax
 */
-property preferredSize		get getPreferredSize
-metadata preferredSize.user_visible is "true"
+-- property preferredSize		get getPreferredSize
+-- metadata preferredSize.user_visible is "true"
 
 
 /**
@@ -130,12 +130,21 @@ Description:
 Use the <foreColor> property to set the color of the SVG path, when the icon
 isn't highlighted.
 */
-private variable mForegroundColor
-property foregroundColor get mForegroundColor
+private variable mForeColor
+property foregroundColor get getForeColor set setForeColor
 metadata foregroundColor.editor is "com.livecode.pi.colorwithalpha"
 metadata foregroundColor.default is "127,127,127,127"
 metadata foregroundColor.section is "Colors"
-metadata foregroundColor.label is "Foreground Color"
+-- metadata foregroundColor.label is "Foreground Color"
+
+public handler setForeColor(in pColor as String) returns nothing
+   put stringToColor(pColor) into mForeColor
+   redraw all
+end handler
+public handler getForeColor() returns String
+   return colorToString(mForeColor, true)
+end handler
+
 
 /**
 Syntax:
@@ -150,9 +159,7 @@ is highlighted.
 */
 property hiliteColor  get getHiliteColor set setHiliteColor
 -- metadata hiliteColor.editor is "com.livecode.pi.color"
-metadata hiliteColor.editor  is "com.livecode.pi.colorwithalpha"
-metadata hiliteColor.default is ""
--- metadata hiliteColor.default is "180,127,160"
+metadata hiliteColor.default is "180,127,160"
 metadata hiliteColor.section is "Colors"
 metadata hiliteColor.label is "Hilite color"
 private variable mHiliteColor as Color
@@ -166,6 +173,18 @@ public handler setHiliteColor(in pColor as String) returns nothing
 end handler
 public handler getHiliteColor() returns String
    return colorToString(mHiliteColor, true)
+end handler
+
+
+---------------------------------------------------------------------s
+private variable mCustomIconSet as String
+property customIconSet       get mCustomIconSet      set setCustomIconSet
+metadata customIconSet.editor is "com.livecode.pi.array"
+metadata customIconSet.label is "Custom Icon Set Array"
+
+public handler setCustomIconSet(in pIconSet as optional any) returns nothing
+	put pIconSet into mCustomIconSet
+	redraw all
 end handler
 
 
@@ -271,6 +290,7 @@ public handler OnSave(out rProperties as Array)
    -- put mBorderWidth into rProperties["borderWidth"]
    -- put colorToString(mStrokeColor, true) into rProperties["borderColor"]
     put colorToString(mHiliteColor, true) into rProperties["hiliteColor"]
+	 put colorToString(mForeColor, true) into rProperties["foreColor"]
 end handler
 
 public handler OnLoad(in pProperties as Array)
@@ -280,6 +300,7 @@ public handler OnLoad(in pProperties as Array)
 	 --put pProperties["borderWidth"] into mBorderWidth
 	 --put stringToColor(pProperties["borderColor"]) into mStrokeColor
 	 put stringToColor(pProperties["hiliteColor"]) into mHiliteColor
+	 put stringToColor(pProperties["foreColor"]) into  mForeColor
 	--  OnGeometryChanged()
 	 redraw all
 end handler
