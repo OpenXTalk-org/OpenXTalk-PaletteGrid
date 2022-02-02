@@ -2,7 +2,7 @@
   <name>org.openxtalk.widget.pallettegrid</name>
   <title>PalletteGrid</title>
   <author>OpenXTalk</author>
-  <version>1.0.1</version>
+  <version>1.0.0</version>
   <license>community</license>
   <type>widget</type>
   <requires name="com.livecode.library.widgetutils"/>

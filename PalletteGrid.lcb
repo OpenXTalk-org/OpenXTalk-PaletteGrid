@@ -27,7 +27,7 @@ use com.livecode.library.iconsvg
 use com.livecode.library.widgetutils
 
 metadata author is "OpenXTalk"
-metadata version is "1.0.1"
+metadata version is "1.0.0"
 metadata title is "PalletteGrid"
 metadata userVisible is "true"
 -- metadata _ide is "true"
@@ -223,6 +223,7 @@ private handler setCustomIconSet(in pString as optional String)
 		 put "fontawesome" into  mCustomIconSet
 	 else
 	 	put pString into mCustomIconSet
+		 setCurrentIconFamily(pString) -- must set the default icon family otherwise icons with the same names from a different family may get mixed up, delivering the wrong SVG Path data
 	 end if
 	 --  log tDataList
 	 -- put iconList() into tDataList
