@@ -63,6 +63,33 @@ private variable mFilterString as String
 private variable mShowSelectedElement as Boolean
 
 /**
+Name: iconClicked
+
+Type: message
+
+Syntax: iconClicked <pIconName>
+
+OS: mac,ios,android,win
+
+Platforms: desktop,mobile
+
+Summary: Sent when a key on the piano set to it's 'on' state.
+
+Example:
+on iconClicked pIconName
+	put "iconClicked " & pIconName
+end iconClicked
+
+Parameters:
+
+pIconName: The name of the icon that was selected
+
+Description:
+Handle the <iconClicked> message in the widget's object script to respond to
+clicks on grids icons by name.
+*/
+
+/**
 The preferred size of the widget.
 
 Syntax:
@@ -133,9 +160,9 @@ isn't highlighted.
 private variable mForeColor
 property foregroundColor get getForeColor set setForeColor
 metadata foregroundColor.editor is "com.livecode.pi.colorwithalpha"
-metadata foregroundColor.default is "127,127,127,127"
+-- metadata foregroundColor.default is "127,127,127,127"
 metadata foregroundColor.section is "Colors"
--- metadata foregroundColor.label is "Foreground Color"
+metadata foregroundColor.label is "Foreground Color"
 
 public handler setForeColor(in pColor as String) returns nothing
    put stringToColor(pColor) into mForeColor
@@ -159,7 +186,7 @@ is highlighted.
 */
 property hiliteColor  get getHiliteColor set setHiliteColor
 -- metadata hiliteColor.editor is "com.livecode.pi.color"
-metadata hiliteColor.default is "180,127,160"
+metadata hiliteColor.default is "54,112,220"
 metadata hiliteColor.section is "Colors"
 metadata hiliteColor.label is "Hilite color"
 private variable mHiliteColor as Color
@@ -175,16 +202,32 @@ public handler getHiliteColor() returns String
    return colorToString(mHiliteColor, true)
 end handler
 
-
 ---------------------------------------------------------------------s
-private variable mCustomIconSet as String
+private variable mCustomIconSet as optional String
 property customIconSet       get mCustomIconSet      set setCustomIconSet
-metadata customIconSet.editor is "com.livecode.pi.array"
-metadata customIconSet.label is "Custom Icon Set Array"
+metadata customIconSet.editor is "com.livecode.pi.string"
+metadata customIconSet.label is "Custom IconFamily Name:"
+metadata customIconSet.default is "ide"
 
-public handler setCustomIconSet(in pIconSet as optional any) returns nothing
-	put pIconSet into mCustomIconSet
-	redraw all
+private handler setCustomIconSet(in pString as optional String)
+	variable tDataList as List
+	if pString is the empty string then
+		put  "ide" into pString
+	end if
+	put 1 into mFirstDataItem
+	put true into mRecalculateGeometry
+		 -- setCurrentIconFamily(pString)
+		--  log the result
+	 put iconListForFamily(pString) into tDataList
+	 if tDataList is empty then
+		 put "fontawesome" into  mCustomIconSet
+	 else
+	 	put pString into mCustomIconSet
+	 end if
+	 --  log tDataList
+	 -- put iconList() into tDataList
+	 SetDataList()
+	 redraw all
 end handler
 
 
@@ -278,7 +321,9 @@ public handler OnCreate()
 	put 32 into mIconSize
    put 2 into mPreferredCols
    put 2 into mPreferredRows
-   --  setHiliteColor(colorToString(tColor,false)) -- pIncludeAlpha
+   -- setHiliteColor("180,127,160") -- pIncludeAlpha
+   put stringToColor("54,112,220") into mHiliteColor
+	put stringToColor("127,127,127,127") into mForeColor
     updateParameters()
 	initialiseScrollbar()
 end handler
@@ -307,10 +352,15 @@ end handler
 
 handler SetDataList()
     variable tDataList as List
-	 get setCurrentIconFamily("OXT_ide")
-	 put iconListForFamily("OXT_ide") into tDataList
+	--  setCurrentIconFamily("OXT_ide")
+	--  log the result
+	if mCustomIconSet is "" or mCustomIconSet is nothing then
+		put "fontawesome" into mCustomIconSet
+	end if
+	 put iconListForFamily(mCustomIconSet) into tDataList
+	 -- log tDataList
     -- put iconList() into tDataList
-	--  if tDataList is not nothing then
+	 if tDataList is not nothing then
 		 variable tFilteredData as List
 		 if mFilterString is not empty then
 		     variable tElement as String
@@ -323,11 +373,14 @@ handler SetDataList()
 		     put tDataList into tFilteredData
 		 end if
 
+		-- put tDataList into mCustomIconSet
+
 		 put the number of elements in tFilteredData into mLastDataItem
 		 put tFilteredData into mDataList
+		 -- log mDataList
 		 put true into mRecalculate
 		 redraw all
-	--  end if
+	end if
 end handler
 
 public handler OnPaint()
@@ -403,7 +456,7 @@ private handler drawTitleBar()
 
 	if mSelectedElement is nothing then
 		put rectangle [tLeft + mColWidth,0,mViewWidth,tTopRowHeight] into tTextRect
-		fill text "No icon selected" at left of tTextRect on this canvas
+		fill text "No selection" at left of tTextRect on this canvas
 	else
 		put rectangle [tLeft + mColWidth,0,mViewWidth,tTopRowHeight] into tTextRect
 		fill text mSelectedElement at left of tTextRect on this canvas
@@ -420,8 +473,8 @@ private handler drawTitleBar()
 	end if
 end handler
 
-constant kMaxIconNameChars is 12
-constant kNameHeight is 14
+constant kMaxIconNameChars is 16
+constant kNameHeight is 8
 private handler drawIcon(in pIcon as Integer)
 	variable tIconName as String
    -- set the paint of this canvas to my background paint
@@ -446,12 +499,12 @@ private handler drawIcon(in pIcon as Integer)
    set the paint of this canvas to my foreground paint
    -- set the paint of this canvas to solid paint with stringToColor("127,127,127,127")
 	if mSelectedElement is not nothing and tIconName is mSelectedElement then
-      set the paint of this canvas to solid paint with stringToColor("127,127,127,127")
+      -- set the paint of this canvas to solid paint with stringToColor("127,127,127,127")
       -- set the paint of this canvas to solid paint with tForeGroundColor
       -- set the paint of this canvas to solid paint with tForeGroundPaint
-		-- set the paint of this canvas to solid paint with mHiliteColor
+	 set the paint of this canvas to my highlight paint
 		-- set the paint of this canvas to getPaint("icon", "selected")
-      -- set the paint of this canvas to my background paint
+      --set the paint of this canvas to my background paint
 
 		fill rectangle path of indexToSectorRect(pIcon) on this canvas
 
@@ -545,11 +598,12 @@ public handler OnMouseUp() returns nothing
          put nothing into mSelectedElement
       else
          put mDataList[tIconNumber] into mSelectedElement
+			-- log mSelectedElement
       end if
    end if
 
    redraw all
-
+	post "iconClicked" with [mSelectedElement]
    post "mouseUp"
 end handler
 
@@ -787,9 +841,8 @@ private handler getPaint(pLocation, pType) returns Paint
 end handler
 
 private handler getFontName() returns String
-	return "Helvetica Neue" --- This is NOT The actual system font on macOS!
+	-- return "Helvetica Neue" --- This is NOT The actual system font on macOS!
 	-- System Font names on newer versions of macOS start with a "." (invisible file)
-
 	return the name of the font of this canvas
 end handler
 
