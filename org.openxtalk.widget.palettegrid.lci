@@ -10,6 +10,7 @@ import module org.openxtalk.widget.palettegrid
   use com.livecode.string
   use com.livecode.type
   use com.livecode.array
+  use com.livecode.typeconvert
   use com.livecode.byte
   use com.livecode.char
   use com.livecode.math
