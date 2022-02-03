@@ -1,6 +1,6 @@
 <package version="0.0">
-  <name>org.openxtalk.widget.pallettegrid</name>
-  <title>PalletteGrid</title>
+  <name>org.openxtalk.widget.palettegrid</name>
+  <title>PaletteGrid</title>
   <author>OpenXTalk</author>
   <version>1.0.0</version>
   <license>community</license>
