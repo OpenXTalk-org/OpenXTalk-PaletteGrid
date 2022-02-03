@@ -1,2 +1,2 @@
-# OpenXTalk-PalletteGrid
+# OpenXTalk-PaletteGrid
  
