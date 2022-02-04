@@ -341,8 +341,10 @@ public handler OnSave(out rProperties as Array)
     put mIconSize into rProperties["iconSize"]
     put mFrameBorder into rProperties["showFrameBorder"]
 	 put mCustomIconSet into rProperties["customIconSet"]
-   -- put mBorderWidth into rProperties["borderWidth"]
-   -- put colorToString(mStrokeColor, true) into rProperties["borderColor"]
+	 put mShowSelectedElement into rProperties["showSelectedElement"]
+	 put mFilterString into rProperties["filterString"]
+	 -- put mBorderWidth into rProperties["borderWidth"]
+    -- put colorToString(mStrokeColor, true) into rProperties["borderColor"]
     put colorToString(mHiliteColor, true) into rProperties["hiliteColor"]
 	 put colorToString(mForeColor, true) into rProperties["foreColor"]
 end handler
@@ -352,6 +354,8 @@ public handler OnLoad(in pProperties as Array)
     put pProperties["iconSize"] into mIconSize
     put pProperties["showFrameBorder"] into mFrameBorder
 	 put pProperties["customIconSet"] into mCustomIconSet
+	 put pProperties["showSelectedElement"] into  mShowSelectedElement
+	 put pProperties["filterString"] into  mFilterString
 	 --put pProperties["borderWidth"] into mBorderWidth
 	 --put stringToColor(pProperties["borderColor"]) into mStrokeColor
 	 put stringToColor(pProperties["hiliteColor"]) into mHiliteColor
@@ -397,8 +401,8 @@ handler SetDataList()
 		 --  updateIconRects()
 		 -- updateGeometry()
 		 --updateParameters()
-		 redraw all
 	end if
+			 redraw all
 end handler
 
 public handler OnPaint()
