@@ -4,7 +4,7 @@ Modified by Paul McClernan -- Jan. 2022
 This file is part of OpenXTalk.
 
 OpenXTalk is free software; you can redistribute it and/or modify it under
-the terms of the GNU General Public License v3 as published by the Free
+the terms of the GNU General Public License v3 as published by the Freerep
 Software Foundation.
 
 OpenXTalk is distributed in the hope that it will be useful, but WITHOUT ANY
@@ -226,12 +226,15 @@ private handler setCustomIconSet(in pString as optional String)
 	 setCurrentIconFamily(mCustomIconSet) -- must set the default icon family otherwise icons with the same names from a different family may get mixed up, delivering the wrong SVG Path data
 	 --  log tDataList
 	 -- put iconList() into tDataList
+
 	 put 1 into mFirstDataItem
 	 put the number of elements in tDataList into mLastDataItem
 	  -- put true into mRecalculateGeometry
 	 -- OnGeometryChanged()
 	 SetDataList()
-	 OnGeometryChanged()
+	 updateParameters()
+	 -- updateFirstDataItem()
+	--  OnGeometryChanged()
 	 redraw all
 end handler
 
@@ -301,39 +304,42 @@ property showSelectedElement get mShowSelectedElement set setShowSelectedElement
 -- variable tColor as Color
 constant kIconColor is [127,127,127]
 
-constant kDefaultIconSize is 32
-constant kIconPaddingRatio is 0.25
-constant kMinCols is 2
-constant kMinRows is 2
+constant kDefaultIconSize is 48
+-- constant kDefaultIconSize is 65
+
+constant kIconPaddingRatio is 0.125
+-- constant kIconPaddingRatio is 0.25
+constant kMinCols is 1
+constant kMinRows is 1
 
 public handler OnCreate()
-
-	put "non-zero" into mFillRule
-
 	put "browse,pointer,button,checkbox,defaultbutton,radiobutton,rectanglebutton,tabspanel,labelfld,field," &\
-         "scrollingfld,tablefld,scrollinglistfld,datagrid,optionmenu,pulldownmenu," &\
-         "comboboxmenu,popupmenu,progressbar,slider,littlearrows,scrollbar,image,player" into mFilterString
-	-- SetDataList()
+			"scrollingfld,tablefld,listfld,scrollinglistfld,datagrid,optionmenu,pulldownmenu," &\
+			"comboboxmenu,popupmenu,progressbar,slider,littlearrows,scrollbar,image,player" into mFilterString
+	SetDataList()
 	put the empty array into mPaths
 	put 1 into mFirstDataItem
 	put true into mRecalculateGeometry
 	put false into mRecalculate
-
+	put the empty path into mScrollbarPath
 	put 0 into mHoverRow
 	put 0 into mViewTopPosition
 	put true into mFrameBorder
 
 	put true into mShowSelectedElement
 	put false into mShowNames
-	put 32 into mIconSize
-   put 2 into mPreferredCols
-   put 2 into mPreferredRows
-   -- setHiliteColor("180,127,160") -- pIncludeAlpha
+	put kDefaultIconSize into mIconSize
+
+	put "non-zero" into mFillRule
+
+   put 1 into mPreferredCols
+   put 16 into mPreferredRows
    put stringToColor("54,112,220") into mHiliteColor
-	put stringToColor("127,127,127,127") into mForeColor
-	SetDataList()
-    updateParameters()
-	initialiseScrollbar()
+
+	updateParameters()
+  initialiseScrollbar()
+  put 0 into mScrollbarHeight
+  put false into mDragging
 end handler
 
 public handler OnSave(out rProperties as Array)
@@ -360,16 +366,27 @@ public handler OnLoad(in pProperties as Array)
 	 --put stringToColor(pProperties["borderColor"]) into mStrokeColor
 	 put stringToColor(pProperties["hiliteColor"]) into mHiliteColor
 	 put stringToColor(pProperties["foreColor"]) into  mForeColor
-	--  OnGeometryChanged()
+	SetDataList()
+ 	initialiseScrollbar()
+ 	updateParameters()
+	-- updateIconRects()
+	updateFirstDataItem()
+	-- updateScrollbar()
+ 	updateGeometry()
+	 OnGeometryChanged()
 	 redraw all
 end handler
 
 handler SetDataList()
-    variable tDataList as List
+	variable tDataList as List
+	variable tFilteredData as List
+
+	--  put iconList() into tDataList
 	--  setCurrentIconFamily("OXT_ide")
 	--  log the result
 	if mCustomIconSet is "" or mCustomIconSet is nothing then
 		put "ide" into mCustomIconSet
+		setCurrentIconFamily(mCustomIconSet)
 	end if
 	 put iconListForFamily(mCustomIconSet) into tDataList
 	 -- log tDataList
@@ -383,7 +400,8 @@ handler SetDataList()
 			 repeat for each element tIconName in tIconNameList
 	 			 variable tElement as String
 			     repeat for each element tElement in tDataList
-			         if tElement contains tIconName then
+					  if tElement is tIconName then
+			        -- if tElement contains tIconName then
 			             push tElement onto tFilteredData
 			         end if
 			     end repeat
@@ -391,71 +409,65 @@ handler SetDataList()
 		 else
 	       put tDataList into tFilteredData
 		 end if
+		 -- put the number of elements in tFilteredData into mLastDataItem
+		 -- put the number of elements in tFilteredData into mDataCount
 
-		-- put tDataList into mCustomIconSet
-		 put 1 into mFirstDataItem
-		 put the number of elements in tFilteredData into mLastDataItem
-		 put tFilteredData into mDataList
-		 -- log mDataList
-		 -- put true into mRecalculateGeometry
-		 --  updateIconRects()
-		 -- updateGeometry()
-		 --updateParameters()
+	 	 put tFilteredData into mDataList
+
+		 put true into mRecalculate
+		 put true into mRecalculateGeometry
+
+		 -- put tDataList into mCustomIconSet
+ 		 -- put 1 into mFirstDataItem
+ 		 -- log mDataList
+ 		 -- put true into mRecalculateGeometry
+ 		 --  updateIconRects()
+ 		 -- updateGeometry()
+		updateParameters()
+		 redraw all
 	end if
-			 redraw all
 end handler
 
 public handler OnPaint()
-       set the stroke width of this canvas to 0.00001
-       set the fill rule of this canvas to mFillRule
-       set the paint of this canvas to my foreground paint
+	set the stroke width of this canvas to 0.00001
+	set the paint of this canvas to my foreground paint
 
     if mRecalculateGeometry then
         updateGeometry()
     end if
+
 	if mRecalculate then
 		updateParameters()
 	end if
 
-	-- Draw the background
+	-- // Draw the background
 	-- if currently popped up then
-      -- set the paint of this canvas to solid paint with stringToColor("255,255,255")-- with my foreground paint
-		--) set the paint of this canvas to getPaint("background","popup")
+	--	set the paint of this canvas to getPaint("background","popup")
 	--	fill rectangle path of my bounds on this canvas
 	-- end if
 
-	// Draw the icons
-	variable tIcon as Integer
-	if mNumRows > 0 and mNumCols > 0 then
-		set the paint of this canvas to my background paint
-		-- repeat with tIcon from 1 up to mNumCols * mNumRows
-		repeat with tIcon from 1 up to mDataCount
+		// Draw the icons
+		variable tIcon as Integer
+		if mNumRows > 0 and mNumCols > 0 then
+			set the paint of this canvas to my background paint
+			-- repeat with tIcon from 1 up to mNumCols * mNumRows
+			 repeat with tIcon from 1 up to mDataCount
+				 if tIcon + mFirstDataItem - 1 > mDataCount then
+				   exit repeat
+			   else
+					drawIcon(tIcon)
+				end if
+			end repeat
+		end if
 
-			 -- if tIcon + mFirstDataItem - 1 > mDataCount then
-			--	exit repeat
-		   -- end if
-			drawIcon(tIcon)
-
-		end repeat
-	end if
-
-   paintScrollbar(this canvas, getPaint("scrollbar", "fill"))
+	set the paint of this canvas to my foreground paint
+	paintScrollbar(this canvas, getPaint("scrollbar", "fill"))
 
    if mShowSelectedElement is true then
-      set the paint of this canvas to my foreground paint
 	   drawTitleBar()
    end if
-
-   variable tPath as Path
-   // Draw the frame
-   if mFrameBorder is true then
-      set the paint of this canvas to my foreground paint
-      put rectangle path of rectangle [0.5,0.5,my width-0.5,my height-0.5] into tPath
-      -- set the paint of this canvas to getPaint("frame","stroke")
-      stroke tPath on this canvas
-   end if
-
 end handler
+
 
 private handler drawTitleBar()
     variable tPath as Path
@@ -481,7 +493,7 @@ private handler drawTitleBar()
 
 	if mSelectedElement is nothing then
 		put rectangle [tLeft + mColWidth,0,mViewWidth,tTopRowHeight] into tTextRect
-		fill text "No selection" at left of tTextRect on this canvas
+		fill text "..." at left of tTextRect on this canvas
 	else
 		put rectangle [tLeft + mColWidth,0,mViewWidth,tTopRowHeight] into tTextRect
 		fill text mSelectedElement at left of tTextRect on this canvas
@@ -502,6 +514,9 @@ constant kMaxIconNameChars is 16
 constant kNameHeight is 8
 private handler drawIcon(in pIcon as Integer)
 	variable tIconName as String
+	put element pIcon + mFirstDataItem - 1 of mDataList into tIconName
+	-- put element pIcon of mDataList into tIconName
+
    -- set the paint of this canvas to my background paint
 
    --variable tForeGroundPaint
@@ -519,8 +534,7 @@ private handler drawIcon(in pIcon as Integer)
 
    -- put my highlight paint into tHilitedPaint
    -- put the color of tHilitedPaint into tHilightColor
-	-- put element pIcon + mFirstDataItem - 1 of mDataList into tIconName
-	put element pIcon of mDataList into tIconName
+
 
    set the paint of this canvas to my foreground paint
    -- set the paint of this canvas to solid paint with stringToColor("127,127,127,127")
@@ -549,14 +563,18 @@ private handler drawIcon(in pIcon as Integer)
 	if tIconName is not among the keys of mPaths then
 		put path iconSVGPathFromName(tIconName) into tPath
 	else
-		-- put mPaths[tIconName] into tPath
+	   put mPaths[tIconName] into tPath
 	end if
 
-	constrainPathToRect(mIconRects[pIcon], tPath)
-   --  set the paint of this canvas to my foreground paint
-   -- set the paint of this canvas to solid paint with stringToColor("255,255,255,127")
-	-- set the paint of this canvas to solid paint with color tForeGroundColor -- kIconColor
-	fill tPath on this canvas
+	--if pIcon <  mDataCount + 1 then
+	-- log pIcon
+	-- log [mLastDataItem, mDataCount, pIcon]
+	constrainPathToRect(mIconRects[pIcon],tPath)
+	   --  set the paint of this canvas to my foreground paint
+	   -- set the paint of this canvas to solid paint with stringToColor("255,255,255,127")
+		-- set the paint of this canvas to solid paint with color tForeGroundColor -- kIconColor
+		fill tPath on this canvas
+	-- end if
 
 	if mShowNames then
 		variable tTextRect as Rectangle
@@ -880,14 +898,15 @@ end handler
 
 private variable mPreferredCols
 private variable mPreferredRows
-
 public handler getPreferredSize() returns List
 	variable tWidth
 	put mIconSize * mPreferredCols * (1 + kIconPaddingRatio) into tWidth
+	-- put mIconSize * kMinCols * (1 + kIconPaddingRatio) into tWidth
 	add 2 * kScrollbarWidth to tWidth
 
 	variable tHeight
-	put mIconSize * mPreferredRows * (1 + kIconPaddingRatio) into tHeight
+	 put mIconSize * mPreferredRows * (1 + kIconPaddingRatio) into tHeight
+   --	put mIconSize * kMinRows * (1 + kIconPaddingRatio) into tHeight
 	add topRowHeight() to tHeight
 	-- log [tWidth, tHeight]
 
@@ -913,6 +932,7 @@ private handler setSelectedElement(in pIcon as String)
       put pIcon into mSelectedElement
       scrollToIndex(tIconIndex)
    end if
+	  -- updateParameters
 	  SetDataList()
 	redraw all
 end handler
@@ -978,8 +998,7 @@ end handler
 public handler paintScrollbar(in pCanvas as Canvas, in pPaint as Paint)
 	-- Draw scrollbar if there is any need
 	if mScrollbarHeight > 0 then
-
-		-- set the paint of pCanvas to pPaint
+		set the paint of pCanvas to pPaint
 		fill mScrollbarPath on pCanvas
 	end if
 end handler
