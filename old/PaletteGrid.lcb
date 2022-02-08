@@ -1,13 +1,13 @@
 /*
 Copyright (C) 2015 LiveCode Ltd.
+Modified by Paul McClernan -- Jan. 2022
+This file is part of OpenXTalk.
 
-This file is part of LiveCode.
-
-LiveCode is free software; you can redistribute it and/or modify it under
+OpenXTalk is free software; you can redistribute it and/or modify it under
 the terms of the GNU General Public License v3 as published by the Free
 Software Foundation.
 
-LiveCode is distributed in the hope that it will be useful, but WITHOUT ANY
+OpenXTalk is distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or
 FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
 for more details.
@@ -16,7 +16,7 @@ You should have received a copy of the GNU General Public License
 along with LiveCode.  If not see <http://www.gnu.org/licenses/>.  */
 
 /**
-This widget is an icon picker, using icons from the iconSVG library.
+This widget is based on the icon picker, using icons from a iconSVG library.
 */
 widget org.openxtalk.widget.palettegrid
 
@@ -31,6 +31,7 @@ metadata version is "1.0.0"
 metadata title is "PaletteGrid"
 metadata userVisible is "true"
 -- metadata _ide is "true"
+metadata preferredSize is "200,600"
 
 private variable mDataCount as Integer
 private variable mDataList as List
@@ -62,6 +63,33 @@ private variable mFilterString as String
 private variable mShowSelectedElement as Boolean
 
 /**
+Name: iconClicked
+
+Type: message
+
+Syntax: iconClicked <pIconName>
+
+OS: mac,ios,android,win
+
+Platforms: desktop,mobile
+
+Summary: Sent when a key on the piano set to it's 'on' state.
+
+Example:
+on iconClicked pIconName
+	put "iconClicked " & pIconName
+end iconClicked
+
+Parameters:
+
+pIconName: The name of the icon that was selected
+
+Description:
+Handle the <iconClicked> message in the widget's object script to respond to
+clicks on grids icons by name.
+*/
+
+/**
 The preferred size of the widget.
 
 Syntax:
@@ -75,20 +103,74 @@ Description:
 The <preferredSize> property is used when the icon widget is popped up
 using the 'popup widget' syntax
 */
-property preferredSize		 get getPreferredSize
-metadata preferredSize.user_visible is "true"
-metadata preferredSize is "320,64"
+-- property preferredSize		get getPreferredSize
+-- metadata preferredSize.user_visible is "true"
+
+
 /**
-The selected icon name
-
 Syntax:
-set the selectedIcon of <widget> to pIcon
-get the selectedIcon of <widget>
+set the fillRule of <widget> to <pRule>
+get the fillRule of <widget>
 
-Value:
-An icon name, from the IconSVG library
+Parameters:
+pRule(enum): The fill rule to be used.
+- "non-zero": Fill regions encircled at least once by the path.
+- "even odd": Fill regions encircled an even number of times by the path.
 
+Summary: The fill rule to be used when rendering the SVG path.
+
+Description:
+Use the <fillRule> property to set the fill rule to be used for the widget.
+You may need to adjust it to ensure that paths that cross themselves, and paths
+that are made up of overlapping subpaths, are filled correctly.
+
+The areas enclosed by the path are each filled or not filled depending on the
+fill rule used and the number of times the path loops around them.  When the
+path goes around a region clockwise, it adds 1 to number of encirclements.
+When it goes around a region anticlockwise, it subtracs 1 from the number of
+encirclements.
+
+See https://www.w3.org/TR/SVG/painting.html#FillRuleProperty for examples of
+the "non-zero" and "even odd" fill rules.
 */
+
+private variable mFillRule as String
+property fillRule       get mFillRule      set setFillRule
+metadata fillRule.editor is "com.livecode.pi.enum"
+metadata fillRule.options is "non-zero,even odd"
+metadata fillRule.default is "non-zero"
+metadata fillRule.label is "Fill rule"
+
+public handler setFillRule(in pRule as String) returns nothing
+	put pRule into mFillRule
+	redraw all
+end handler
+
+/**
+Syntax:
+set the foreColor of <widget> to <pColor>
+get the foreColor of <widget>
+
+Summary: Determines the color of the icon when not highlighted.
+
+Description:
+Use the <foreColor> property to set the color of the SVG path, when the icon
+isn't highlighted.
+*/
+private variable mForeColor
+property foregroundColor get getForeColor set setForeColor
+metadata foregroundColor.editor is "com.livecode.pi.colorwithalpha"
+-- metadata foregroundColor.default is "127,127,127,127"
+metadata foregroundColor.section is "Colors"
+metadata foregroundColor.label is "Foreground Color"
+
+public handler setForeColor(in pColor as String) returns nothing
+   put stringToColor(pColor) into mForeColor
+   redraw all
+end handler
+public handler getForeColor() returns String
+   return colorToString(mForeColor, true)
+end handler
 
 
 /**
@@ -144,18 +226,27 @@ private handler setCustomIconSet(in pString as optional String)
 	 setCurrentIconFamily(mCustomIconSet) -- must set the default icon family otherwise icons with the same names from a different family may get mixed up, delivering the wrong SVG Path data
 	 --  log tDataList
 	 -- put iconList() into tDataList
-
-	 -- put 1 into mFirstDataItem
+	 put 1 into mFirstDataItem
 	 put the number of elements in tDataList into mLastDataItem
 	  -- put true into mRecalculateGeometry
 	 -- OnGeometryChanged()
 	 SetDataList()
-	 updateParameters()
-	 -- updateFirstDataItem()
-	--  OnGeometryChanged()
+	 OnGeometryChanged()
 	 redraw all
 end handler
 
+
+/**
+The selected icon name
+
+Syntax:
+set the selectedIcon of <widget> to pIcon
+get the selectedIcon of <widget>
+
+Value:
+An icon name, from the IconSVG library
+
+*/
 property selectedIcon get mSelectedElement set setSelectedElement
 
 /**
@@ -197,6 +288,9 @@ set the filterString of <widget> to pString
 get the filterString of <widget>
 */
 property filterString get mFilterString set SetFilterString
+metadata customIconSet.editor is "com.livecode.pi.string"
+metadata customIconSet.label is "Custom IconFamily Name:"
+metadata customIconSet.default is "browse,pointer,button,checkbox,defaultbutton,radiobutton,rectanglebutton,tabspanel,labelfld,field,scrollingfld,tablefld,scrollinglistfld,datagrid,optionmenu,pulldownmenu,comboboxmenu,popupmenu,progressbar,slider,littlearrows,scrollbar,image,player"
 
 /**
 Controls whether a title bar is drawn displaying the currently selected icon
@@ -207,35 +301,42 @@ get the showSelectedElement of <widget>
 */
 property showSelectedElement get mShowSelectedElement set setShowSelectedElement
 
-constant kIconColor is [0,0,0]
+-- variable tColor as Color
+constant kIconColor is [127,127,127]
 
-constant kDefaultIconSize is 48
-constant kIconPaddingRatio is 0.125
-constant kMinCols is 3
-constant kMinRows is 3
+constant kDefaultIconSize is 32
+constant kIconPaddingRatio is 0.25
+constant kMinCols is 2
+constant kMinRows is 2
 
 public handler OnCreate()
+
+	put "non-zero" into mFillRule
+
 	put "browse,pointer,button,checkbox,defaultbutton,radiobutton,rectanglebutton,tabspanel,labelfld,field," &\
-			"scrollingfld,tablefld,listfld,scrollinglistfld,datagrid,optionmenu,pulldownmenu," &\
-			"comboboxmenu,popupmenu,progressbar,slider,littlearrows,scrollbar,imagebox,player" into mFilterString
-	SetDataList()
+         "scrollingfld,tablefld,scrollinglistfld,datagrid,optionmenu,pulldownmenu," &\
+         "comboboxmenu,popupmenu,progressbar,slider,littlearrows,scrollbar,image,player" into mFilterString
+	-- SetDataList()
 	put the empty array into mPaths
 	put 1 into mFirstDataItem
 	put true into mRecalculateGeometry
 	put false into mRecalculate
-	put the empty path into mScrollbarPath
+
 	put 0 into mHoverRow
 	put 0 into mViewTopPosition
 	put true into mFrameBorder
 
 	put true into mShowSelectedElement
 	put false into mShowNames
-	put kDefaultIconSize into mIconSize
-
+	put 32 into mIconSize
+   put 2 into mPreferredCols
+   put 2 into mPreferredRows
+   -- setHiliteColor("180,127,160") -- pIncludeAlpha
+   put stringToColor("54,112,220") into mHiliteColor
+	put stringToColor("127,127,127,127") into mForeColor
+	SetDataList()
     updateParameters()
-	-- initialiseScrollbar()
-	put 0 into mScrollbarHeight
-	put false into mDragging
+	initialiseScrollbar()
 end handler
 
 public handler OnSave(out rProperties as Array)
@@ -245,9 +346,12 @@ public handler OnSave(out rProperties as Array)
 	 put mCustomIconSet into rProperties["customIconSet"]
 	 put mShowSelectedElement into rProperties["showSelectedElement"]
 	 put mFilterString into rProperties["filterString"]
+	 put mSelectedElement into rProperties["selectedIcon"]
 	 -- put mBorderWidth into rProperties["borderWidth"]
     -- put colorToString(mStrokeColor, true) into rProperties["borderColor"]
     put colorToString(mHiliteColor, true) into rProperties["hiliteColor"]
+	 put colorToString(mForeColor, true) into rProperties["foreColor"]
+
 end handler
 
 public handler OnLoad(in pProperties as Array)
@@ -257,22 +361,26 @@ public handler OnLoad(in pProperties as Array)
 	 put pProperties["customIconSet"] into mCustomIconSet
 	 put pProperties["showSelectedElement"] into  mShowSelectedElement
 	 put pProperties["filterString"] into  mFilterString
+	 put pProperties["selectedIcon"] into  mSelectedElement
+
 	 --put pProperties["borderWidth"] into mBorderWidth
 	 --put stringToColor(pProperties["borderColor"]) into mStrokeColor
 	 put stringToColor(pProperties["hiliteColor"]) into mHiliteColor
+	 put stringToColor(pProperties["foreColor"]) into  mForeColor
+	--  OnGeometryChanged()
+	 redraw all
 end handler
 
 handler SetDataList()
     variable tDataList as List
-	 --  put iconList() into tDataList
-	 --  setCurrentIconFamily("OXT_ide")
-	 --  log the result
-	 if mCustomIconSet is "" or mCustomIconSet is nothing then
-		 put "ide" into mCustomIconSet
-	 end if
-	  put iconListForFamily(mCustomIconSet) into tDataList
-
-    variable tFilteredData as List
+	--  setCurrentIconFamily("OXT_ide")
+	--  log the result
+	if mCustomIconSet is "" or mCustomIconSet is nothing then
+		put "ide" into mCustomIconSet
+	end if
+	 put iconListForFamily(mCustomIconSet) into tDataList
+	 -- log tDataList
+    -- put iconList() into tDataList
 	 if tDataList is not nothing then
 		 variable tFilteredData as List
        if mFilterString is not empty then
@@ -292,62 +400,69 @@ handler SetDataList()
 	       put tDataList into tFilteredData
 		 end if
 
-	    put the number of elements in tFilteredData into mLastDataItem
-	    put tFilteredData into mDataList
-	    put true into mRecalculate
-	    redraw all
-	 end if
+		-- put tDataList into mCustomIconSet
+		 put 1 into mFirstDataItem
+		 put the number of elements in tFilteredData into mLastDataItem
+		 put tFilteredData into mDataList
+		 -- log mDataList
+		 -- put true into mRecalculateGeometry
+		 --  updateIconRects()
+		 -- updateGeometry()
+		 --updateParameters()
+	end if
+			 redraw all
 end handler
 
 public handler OnPaint()
-	set the stroke width of this canvas to 0.00001
-	set the paint of this canvas to my foreground paint
+       set the stroke width of this canvas to 0.00001
+       set the fill rule of this canvas to mFillRule
+       set the paint of this canvas to my foreground paint
 
     if mRecalculateGeometry then
         updateGeometry()
     end if
-
 	if mRecalculate then
 		updateParameters()
 	end if
 
-	-- // Draw the background
+	-- Draw the background
 	-- if currently popped up then
-	--	set the paint of this canvas to getPaint("background","popup")
+      -- set the paint of this canvas to solid paint with stringToColor("255,255,255")-- with my foreground paint
+		--) set the paint of this canvas to getPaint("background","popup")
 	--	fill rectangle path of my bounds on this canvas
 	-- end if
 
-		// Draw the icons
-		variable tIcon as Integer
-		if mNumRows > 0 and mNumCols > 0 then
-			set the paint of this canvas to my background paint
-			-- repeat with tIcon from 1 up to mNumCols * mNumRows
-			 repeat with tIcon from 1 up to mDataCount
-				 if tIcon + mFirstDataItem - 1 > mDataCount then
-				   exit repeat
-			   else
-					drawIcon(tIcon)
-				end if
-			end repeat
-		end if
+	// Draw the icons
+	variable tIcon as Integer
+	if mNumRows > 0 and mNumCols > 0 then
+		set the paint of this canvas to my background paint
+		-- repeat with tIcon from 1 up to mNumCols * mNumRows
+		repeat with tIcon from 1 up to mDataCount
 
-	set the paint of this canvas to my foreground paint
-   paintScrollbar(this canvas, my foreground paint )
-	-- paintScrollbar(this canvas, getPaint("scrollbar", "fill"))
+			 if tIcon + mFirstDataItem - 1 > mDataCount then
+				exit repeat
+		    end if
+			drawIcon(tIcon)
+
+		end repeat
+	end if
+
+   paintScrollbar(this canvas, getPaint("scrollbar", "fill"))
 
    if mShowSelectedElement is true then
+      set the paint of this canvas to my foreground paint
 	   drawTitleBar()
    end if
-end handler
 
-private handler drawFrame()
-	variable tPath as Path
-	// Draw the frame
-	if mFrameBorder is true then
-		put rectangle path of rectangle [0.5,0.5,my width-0.5,my height-0.5] into tPath
-		set the paint of this canvas to getPaint("frame","stroke")
-		stroke tPath on this canvas
-	end if
+   variable tPath as Path
+   // Draw the frame
+   if mFrameBorder is true then
+      set the paint of this canvas to my foreground paint
+      put rectangle path of rectangle [0.5,0.5,my width-0.5,my height-0.5] into tPath
+      -- set the paint of this canvas to getPaint("frame","stroke")
+      stroke tPath on this canvas
+   end if
+
 end handler
 
 private handler drawTitleBar()
@@ -357,12 +472,12 @@ private handler drawTitleBar()
 	put topRowHeight() into tTopRowHeight
 	// Draw the title line
 	put line path from point [0.5,tTopRowHeight] to point [my width-0.5, tTopRowHeight] into tPath
-	set the paint of this canvas to getPaint("frame","stroke")
+	-- set the paint of this canvas to getPaint("frame","stroke")
 	stroke tPath on this canvas
 
 	// Draw the selected text and icon
 	variable tTextRect as Rectangle
-	set the paint of this canvas to my foreground paint-- solid paint with color kIconColor
+	-- set the paint of this canvas to solid paint with stringToColor("255,255,255")
 
     variable tFont as Font
     put my font into tFont
@@ -374,7 +489,7 @@ private handler drawTitleBar()
 
 	if mSelectedElement is nothing then
 		put rectangle [tLeft + mColWidth,0,mViewWidth,tTopRowHeight] into tTextRect
-		fill text "No icon selected" at left of tTextRect on this canvas
+		fill text "No selection" at left of tTextRect on this canvas
 	else
 		put rectangle [tLeft + mColWidth,0,mViewWidth,tTopRowHeight] into tTextRect
 		fill text mSelectedElement at left of tTextRect on this canvas
@@ -386,37 +501,70 @@ private handler drawTitleBar()
 			put mPaths[mSelectedElement] into tPath
 		end if
 		constrainPathToRect(tIconRect, tPath)
-		set the paint of this canvas to my foreground paint ---  solid paint with color kIconColor
+		-- set the paint of this canvas to solid paint with stringToColor("127,127,127") -- tHilightColor--  kIconColor
 		fill tPath on this canvas
 	end if
 end handler
 
-constant kMaxIconNameChars is 12
-constant kNameHeight is 20
+constant kMaxIconNameChars is 16
+constant kNameHeight is 8
 private handler drawIcon(in pIcon as Integer)
 	variable tIconName as String
-	put element pIcon + mFirstDataItem - 1 of mDataList into tIconName
+   -- set the paint of this canvas to my background paint
 
+   --variable tForeGroundPaint
+   -- variable tForeGroundColor as Color
+   --variable tBackroundPaint
+   -- variable tBackroundColor as Color
+   -- variable tHilitedPaint
+   -- variable tHilightColor as Color
+
+   -- put my foreground paint into tForeGroundPaint
+   -- put the color of tForeGroundPaint into tForeGroundColor
+
+   -- put my background paint into tBackroundPaint
+   -- put the color of tBackroundPaint into tBackroundColor
+
+   -- put my highlight paint into tHilitedPaint
+   -- put the color of tHilitedPaint into tHilightColor
+	-- put element pIcon + mFirstDataItem - 1 of mDataList into tIconName
+	put element pIcon of mDataList into tIconName
+
+   set the paint of this canvas to my foreground paint
+   -- set the paint of this canvas to solid paint with stringToColor("127,127,127,127")
 	if mSelectedElement is not nothing and tIconName is mSelectedElement then
-		set the paint of this canvas to getPaint("icon", "selected")
+      -- set the paint of this canvas to solid paint with stringToColor("127,127,127,127")
+      -- set the paint of this canvas to solid paint with tForeGroundColor
+      -- set the paint of this canvas to solid paint with tForeGroundPaint
+	 set the paint of this canvas to my highlight paint
+		-- set the paint of this canvas to getPaint("icon", "selected")
+      --set the paint of this canvas to my background paint
+
 		fill rectangle path of indexToSectorRect(pIcon) on this canvas
+
+      -- set the paint of this canvas to solid paint with stringToColor("255,255,255,127")
+       set the paint of this canvas to my foreground paint
+
+      -- set the paint of this canvas to nothing
+      set the stroke width of this canvas to 2
+      stroke rectangle path of indexToSectorRect(pIcon) on this canvas
+
+      -- set the paint of this canvas to solid paint with stringToColor("127,127,127,127")
+      -- set the paint of this canvas to my highlight paint
 	end if
 
 	variable tPath as Path
 	if tIconName is not among the keys of mPaths then
 		put path iconSVGPathFromName(tIconName) into tPath
 	else
-		put mPaths[tIconName] into tPath
+		-- put mPaths[tIconName] into tPath
 	end if
-   variable tRect as optional Rectangle
-   if pIcon + 1 < the number of elements in mIconRects then
-      put mIconRects[pIcon] into tRect
-      log tRect
-    	constrainPathToRect(tRect, tPath)
-	     set the paint of this canvas to my foreground paint-- solid paint with color kIconColor
-         fill tPath on this canvas
-   end if
 
+	constrainPathToRect(mIconRects[pIcon], tPath)
+   --  set the paint of this canvas to my foreground paint
+   -- set the paint of this canvas to solid paint with stringToColor("255,255,255,127")
+	-- set the paint of this canvas to solid paint with color tForeGroundColor -- kIconColor
+	fill tPath on this canvas
 
 	if mShowNames then
 		variable tTextRect as Rectangle
@@ -484,6 +632,7 @@ public handler OnMouseUp() returns nothing
          put nothing into mSelectedElement
       else
          put mDataList[tIconNumber] into mSelectedElement
+			-- log mSelectedElement
       end if
    end if
 
@@ -509,10 +658,10 @@ public handler OnMouseScroll(in pDeltaX as Real, in pDeltaY as Real) returns not
 
 		ensureViewTopPosition()
 
-		-- If nothing changed, don't update anything
-		-- if mViewTopPosition is tOldTop then
-		--	return
-		-- end if
+		// If nothing changed, don't update anything
+		if mViewTopPosition is tOldTop then
+			return
+		end if
 
 		updateFirstDataItem()
 		updateScrollbar(mViewWidth, mViewHeight, mDataHeight, mViewTopPosition, topRowHeight())
@@ -705,28 +854,29 @@ end handler
 private handler getPaint(pLocation, pType) returns Paint
 	if pLocation is "background" then
 		if pType is "popup" then
-			return solid paint with stringToColor("255,255,255,128")
+			return solid paint with stringToColor("255,255,255,127")
 		end if
 	else if pLocation is "icon" then
 		if pType is "selected" then
-			return solid paint with stringToColor("0,150,150")
+			return solid paint with mHiliteColor
+			-- return solid paint with stringToColor("0,150,150")
 		end if
 	else if pLocation is "scrollbar" then
 		if pType is "fill" then
-			return solid paint with stringToColor("0,0,0,50")
+			return solid paint with stringToColor("127,127,127,127")
 		end if
 	else if pLocation is "frame" then
 		if pType is "stroke" then
 			return solid paint with stringToColor("188,188,188")
 		end if
 	end if
-
-	return solid paint with stringToColor("255,100,200")
+ --	return solid paint with mHiliteColor
+	 return solid paint with stringToColor("256,127,150")
 end handler
 
 private handler getFontName() returns String
-	return "Helvetica Neue"
-
+	-- return "Helvetica Neue" --- This is NOT The actual system font on macOS!
+	-- System Font names on newer versions of macOS start with a "." (invisible file)
 	return the name of the font of this canvas
 end handler
 
@@ -736,17 +886,19 @@ end handler
 --
 --------------------------------------------------------------------------------
 
-constant kPreferredCols is 5
-constant kPreferredRows is 5
+private variable mPreferredCols
+private variable mPreferredRows
 
 public handler getPreferredSize() returns List
 	variable tWidth
-	put mIconSize * kPreferredCols * (1 + kIconPaddingRatio) into tWidth
+	put mIconSize * mPreferredCols * (1 + kIconPaddingRatio) into tWidth
 	add 2 * kScrollbarWidth to tWidth
 
 	variable tHeight
-	put mIconSize * kPreferredRows * (1 + kIconPaddingRatio) into tHeight
+	put mIconSize * mPreferredRows * (1 + kIconPaddingRatio) into tHeight
 	add topRowHeight() to tHeight
+	-- log [tWidth, tHeight]
+
 	return [tWidth, tHeight]
 end handler
 
@@ -769,6 +921,8 @@ private handler setSelectedElement(in pIcon as String)
       put pIcon into mSelectedElement
       scrollToIndex(tIconIndex)
    end if
+	  SetDataList()
+	redraw all
 end handler
 
 private handler SetIconSize(in pSize as Number)
@@ -786,7 +940,6 @@ private handler SetFilterString(in pString as String)
     put pString into mFilterString
     put 1 into mFirstDataItem
     put true into mRecalculateGeometry
-
     SetDataList()
     redraw all
 end handler
@@ -816,7 +969,7 @@ private variable mScrollbarHeight as Real
 private variable mScrollbarPath as Path
 private variable mScrollbarY as Real
 
--- Drag related
+// Drag related
 private variable mDragging as Boolean
 private variable mDragStartLoc as Point
 private variable mDragScrollbarOffset as Real
@@ -833,7 +986,8 @@ end handler
 public handler paintScrollbar(in pCanvas as Canvas, in pPaint as Paint)
 	-- Draw scrollbar if there is any need
 	if mScrollbarHeight > 0 then
-		set the paint of pCanvas to pPaint
+
+		-- set the paint of pCanvas to pPaint
 		fill mScrollbarPath on pCanvas
 	end if
 end handler
