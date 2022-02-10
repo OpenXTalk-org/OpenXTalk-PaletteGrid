@@ -209,10 +209,10 @@ property showSelectedElement get mShowSelectedElement set setShowSelectedElement
 
 constant kIconColor is [0,0,0]
 
-constant kDefaultIconSize is 48
+constant kDefaultIconSize is 36
 constant kIconPaddingRatio is 0.125
-constant kMinCols is 3
-constant kMinRows is 3
+constant kMinCols is 1
+constant kMinRows is 1
 
 public handler OnCreate()
 	put "browse,pointer,button,checkbox,defaultbutton,radiobutton,rectanglebutton,tabspanel,labelfld,field," &\
@@ -233,7 +233,7 @@ public handler OnCreate()
 	put kDefaultIconSize into mIconSize
 
     updateParameters()
-	-- initialiseScrollbar()
+	initialiseScrollbar()
 	put 0 into mScrollbarHeight
 	put false into mDragging
 end handler
@@ -295,6 +295,8 @@ handler SetDataList()
 	    put the number of elements in tFilteredData into mLastDataItem
 	    put tFilteredData into mDataList
 	    put true into mRecalculate
+       put true into mRecalculateGeometry
+       initialiseScrollbar()
 	    redraw all
 	 end if
 end handler
@@ -303,21 +305,22 @@ public handler OnPaint()
 	set the stroke width of this canvas to 0.00001
 	set the paint of this canvas to my foreground paint
 
-    if mRecalculateGeometry then
-        updateGeometry()
-    end if
+   --  if mRecalculateGeometry then
+   updateGeometry()
+   --  end if
 
-	if mRecalculate then
-		updateParameters()
-	end if
+	-- if mRecalculate then
+	updateParameters()
+   --	end if
 
 	-- // Draw the background
 	-- if currently popped up then
 	--	set the paint of this canvas to getPaint("background","popup")
 	--	fill rectangle path of my bounds on this canvas
 	-- end if
+    drawFrame()
 
-		// Draw the icons
+   	// Draw the icons
 		variable tIcon as Integer
 		if mNumRows > 0 and mNumCols > 0 then
 			set the paint of this canvas to my background paint
@@ -345,7 +348,7 @@ private handler drawFrame()
 	// Draw the frame
 	if mFrameBorder is true then
 		put rectangle path of rectangle [0.5,0.5,my width-0.5,my height-0.5] into tPath
-		set the paint of this canvas to getPaint("frame","stroke")
+		set the paint of this canvas to my foreground paint-- getPaint("frame","stroke")
 		stroke tPath on this canvas
 	end if
 end handler
@@ -357,7 +360,7 @@ private handler drawTitleBar()
 	put topRowHeight() into tTopRowHeight
 	// Draw the title line
 	put line path from point [0.5,tTopRowHeight] to point [my width-0.5, tTopRowHeight] into tPath
-	set the paint of this canvas to getPaint("frame","stroke")
+	set the paint of this canvas to my foreground paint --  getPaint("frame","stroke")
 	stroke tPath on this canvas
 
 	// Draw the selected text and icon
@@ -391,27 +394,28 @@ private handler drawTitleBar()
 	end if
 end handler
 
-constant kMaxIconNameChars is 12
-constant kNameHeight is 20
+constant kMaxIconNameChars is 10
+constant kNameHeight is 10
 private handler drawIcon(in pIcon as Integer)
+----------------------------------------------- GET THE SVGPath Data for index
 	variable tIconName as String
 	put element pIcon + mFirstDataItem - 1 of mDataList into tIconName
-
 	if mSelectedElement is not nothing and tIconName is mSelectedElement then
 		set the paint of this canvas to getPaint("icon", "selected")
 		fill rectangle path of indexToSectorRect(pIcon) on this canvas
 	end if
-
 	variable tPath as Path
 	if tIconName is not among the keys of mPaths then
 		put path iconSVGPathFromName(tIconName) into tPath
 	else
 		put mPaths[tIconName] into tPath
 	end if
+
    variable tRect as optional Rectangle
-   if pIcon + 1 < the number of elements in mIconRects then
+   --if pIcon + 1 < the number of elements in mIconRects then
+   if pIcon < (the number of elements in mIconRects + 1 ) then
       put mIconRects[pIcon] into tRect
-      log tRect
+      -- log tRect
     	constrainPathToRect(tRect, tPath)
 	     set the paint of this canvas to my foreground paint-- solid paint with color kIconColor
          fill tPath on this canvas
@@ -567,9 +571,12 @@ end handler
 
 public handler OnGeometryChanged()
 	// Only resizing necessitates a recalculation
-	if my height is not mViewHeight + topRowHeight() or my width is not mViewWidth + kScrollbarWidth then
+   --	if my height is not mViewHeight + topRowHeight() or my width is not mViewWidth + kScrollbarWidth then
     	put true into mRecalculateGeometry
-    end if
+   --  end if
+   put true into mRecalculate
+    updateParameters()
+    updateGeometry()
 end handler
 
 --------------------------------------------------------------------------------
