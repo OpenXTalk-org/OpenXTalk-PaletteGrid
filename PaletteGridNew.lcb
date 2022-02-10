@@ -108,6 +108,7 @@ metadata hiliteColor.default is "54,112,220"
 metadata hiliteColor.section is "Colors"
 metadata hiliteColor.label is "Hilite color"
 private variable mHiliteColor as Color
+
 -- property hiliteColor 	get getHiliteColor set setHiliteColor
 -- "com.livecode.pi.color"
 -- metadata hiliteColor.label   is "Hilite fill"
@@ -146,11 +147,11 @@ private handler setCustomIconSet(in pString as optional String)
 	 -- put iconList() into tDataList
 
 	 -- put 1 into mFirstDataItem
-	 put the number of elements in tDataList into mLastDataItem
+	 --  put the number of elements in tDataList into mLastDataItem
 	  -- put true into mRecalculateGeometry
 	 -- OnGeometryChanged()
 	 SetDataList()
-	 updateParameters()
+	 -- updateParameters()
 	 -- updateFirstDataItem()
 	--  OnGeometryChanged()
 	 redraw all
@@ -210,11 +211,12 @@ property showSelectedElement get mShowSelectedElement set setShowSelectedElement
 constant kIconColor is [0,0,0]
 
 constant kDefaultIconSize is 36
-constant kIconPaddingRatio is 0.125
+constant kIconPaddingRatio is 0.375
 constant kMinCols is 1
 constant kMinRows is 1
 
 public handler OnCreate()
+   put "ide" into mCustomIconSet
 	put "browse,pointer,button,checkbox,defaultbutton,radiobutton,rectanglebutton,tabspanel,labelfld,field," &\
 			"scrollingfld,tablefld,listfld,scrollinglistfld,datagrid,optionmenu,pulldownmenu," &\
 			"comboboxmenu,popupmenu,progressbar,slider,littlearrows,scrollbar,imagebox,player" into mFilterString
@@ -227,15 +229,14 @@ public handler OnCreate()
 	put 0 into mHoverRow
 	put 0 into mViewTopPosition
 	put true into mFrameBorder
-
-	put true into mShowSelectedElement
+   put 0 into mScrollbarHeight
+	put false into mDragging
+	put false into mShowSelectedElement
 	put false into mShowNames
 	put kDefaultIconSize into mIconSize
-
-    updateParameters()
+   setHiliteColor("54,112,220")
+   updateParameters()
 	initialiseScrollbar()
-	put 0 into mScrollbarHeight
-	put false into mDragging
 end handler
 
 public handler OnSave(out rProperties as Array)
@@ -260,6 +261,10 @@ public handler OnLoad(in pProperties as Array)
 	 --put pProperties["borderWidth"] into mBorderWidth
 	 --put stringToColor(pProperties["borderColor"]) into mStrokeColor
 	 put stringToColor(pProperties["hiliteColor"]) into mHiliteColor
+    put true into mRecalculate
+    put true into mRecalculateGeometry
+    updateParameters()
+    redraw all
 end handler
 
 handler SetDataList()
@@ -270,7 +275,8 @@ handler SetDataList()
 	 if mCustomIconSet is "" or mCustomIconSet is nothing then
 		 put "ide" into mCustomIconSet
 	 end if
-	  put iconListForFamily(mCustomIconSet) into tDataList
+    setCurrentIconFamily(mCustomIconSet)
+	 put iconListForFamily(mCustomIconSet) into tDataList
 
     variable tFilteredData as List
 	 if tDataList is not nothing then
@@ -326,7 +332,7 @@ public handler OnPaint()
 			set the paint of this canvas to my background paint
 			-- repeat with tIcon from 1 up to mNumCols * mNumRows
 			 repeat with tIcon from 1 up to mDataCount
-				 if tIcon + mFirstDataItem - 1 > mDataCount then
+             if tIcon + mFirstDataItem - 1 > mDataCount then
 				   exit repeat
 			   else
 					drawIcon(tIcon)
@@ -497,7 +503,7 @@ public handler OnMouseUp() returns nothing
 end handler
 
 public handler OnMouseCancel() returns nothing
-	scrollbarMouseUp()
+    scrollbarMouseUp()
 end handler
 
 public handler OnMouseScroll(in pDeltaX as Real, in pDeltaY as Real) returns nothing
@@ -514,9 +520,9 @@ public handler OnMouseScroll(in pDeltaX as Real, in pDeltaY as Real) returns not
 		ensureViewTopPosition()
 
 		-- If nothing changed, don't update anything
-		-- if mViewTopPosition is tOldTop then
-		--	return
-		-- end if
+		if mViewTopPosition is tOldTop then
+		  return
+		end if
 
 		updateFirstDataItem()
 		updateScrollbar(mViewWidth, mViewHeight, mDataHeight, mViewTopPosition, topRowHeight())
@@ -555,6 +561,7 @@ private handler mousePosToIconNumber(in pMouse as Point) returns Integer
 
    variable tNumber as Integer
    put (tRow - 1) * mNumCols + tCol + mFirstDataItem - 1 into tNumber
+   -- put (tRow) * mNumCols + tCol + mFirstDataItem - 1 into tNumber
 
    -- Ignore clicks in above the first displayed icon
    if tNumber < mFirstDataItem then
@@ -563,20 +570,17 @@ private handler mousePosToIconNumber(in pMouse as Point) returns Integer
 
 	-- Ignore clicks after the last icon
 	if tNumber > mLastDataItem then
-		put 0 into tNumber
-	end if
+	   put 0 into tNumber
+   end if
 
 	return tNumber
 end handler
 
 public handler OnGeometryChanged()
 	// Only resizing necessitates a recalculation
-   --	if my height is not mViewHeight + topRowHeight() or my width is not mViewWidth + kScrollbarWidth then
+	if my height is not mViewHeight + topRowHeight() or my width is not mViewWidth + kScrollbarWidth then
     	put true into mRecalculateGeometry
-   --  end if
-   put true into mRecalculate
-    updateParameters()
-    updateGeometry()
+    end if
 end handler
 
 --------------------------------------------------------------------------------
@@ -942,7 +946,7 @@ private handler scrollRatio(in pViewHeight as Real)
 	// Get the scrollbar space
 	variable tScrollbarSpace as Real
 	variable tScrollbarSpaceTop as Real
-	put pViewHeight - mScrollbarHeight into tScrollbarSpace
+	put pViewHeight - mRowHeight - mScrollbarHeight into tScrollbarSpace
 
 	return mScrollbarY / tScrollbarSpace
 end handler
