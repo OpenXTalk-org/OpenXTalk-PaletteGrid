@@ -470,6 +470,11 @@ public handler onMouseLeave() returns nothing
 	redraw all
 end handler
 
+public handler Play()
+   log "play command intercepted"
+   return
+end handler
+
 public handler OnMouseUp() returns nothing
    if mDragging then
       scrollbarMouseUp()
